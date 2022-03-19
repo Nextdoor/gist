@@ -1,0 +1,95 @@
+#!/bin/sh
+
+check_platform() {
+  OS=$(uname_os)
+  ARCH=$(uname_arch)
+  PLATFORM="${OS}/${ARCH}"
+  log_info "Platform: $PLATFORM"
+}
+
+check_envvars() {
+  log_info "HOME: ${HOME}"
+  log_info "USER: ${USER}"
+  log_info "DOTFILES_DIR: ${DOTFILES_DIR}"
+  log_info "NEXTDOOR_ROOT: ${NEXTDOOR_ROOT}"
+  log_info "CONDA_ROOT: ${CONDA_ROOT}"
+}
+
+check_tools() {
+  inspect "git --version"
+  inspect "aws --version"
+  inspect "brew --version"
+  inspect "docker --version"
+  inspect "docker system df"
+  inspect "conda --version"
+  inspect "conda env list"
+  inspect "${CONDA_ROOT}/envs/nextdoor3/bin/python --version"
+  inspect "which python; python --version"
+  inspect "which python3 && python3 --version"
+  inspect "which pip && pip --version"
+  inspect "which pip3 && pip3 --version"
+}
+
+check_git_ssh() {
+  inspect "ps -exf | grep ssh-agent"
+  inspect "cat ${HOME}/.gitconfig"
+  inspect "cat ${HOME}/.ssh/config"
+  inspect "cat ${HOME}/.ssh/config.d/github.com.config"
+  inspect "ls -l ${HOME}/.ssh/ssh_ca_proxy.sh"
+  inspect "ls -l ${HOME}/.ssh/S.ssh-agent.ssh"
+}
+check_dotfiles() {
+  dotfiles_dir=${DOTFILES_DIR:-"${HOME}/src/dotfiles"}
+  inspect "ls -al ${dotfiles_dir}"
+
+}
+
+check_nextdoor() {
+  dir=${NEXTDOOR_ROOT:-"${HOME}/src/nextdoor.com"}
+  inspect "ls -al ${dir}"
+
+}
+
+echonormal() {
+  echo "$@"
+}
+
+echoerr() {
+  echo "$@" 1>&2
+}
+log_prefix() {
+  # shellcheck disable=SC2005
+  echo "[$(date '+%Y-%m-%d %H:%M:%S')]"
+}
+log_info() {
+  echonormal "$(log_prefix)" "$@"
+}
+inspect() {
+  command=$1
+  log_info ${command}
+  eval "$command"
+}
+uname_os() {
+  os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  echo "$os"
+}
+
+uname_arch() {
+  arch=$(uname -m)
+  case $arch in
+    x86_64) arch="amd64" ;;
+    aarch64) arch="arm64" ;;
+  esac
+  echo ${arch}
+}
+
+echo "Start screening your local environment .."
+check_platform
+check_envvars
+check_tools
+check_git_ssh
+check_dotfiles
+check_nextdoor
+MAGENTA='\033[35m'
+NC='\033[0m' # No Color
+echoerr "${MAGENTA}Done! Please copy the output and send it to DX for diagnose.${NC}"
